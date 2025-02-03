@@ -1,0 +1,13 @@
+{
+  "name": "alarm-clock",
+  "version": "1.0.0",
+  "description": "An alarm clock application with custom sound upload support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-fileupload": "^1.5.1"
+  }
+}

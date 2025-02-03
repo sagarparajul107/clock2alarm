@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary-color: #ff9800;
+      --secondary-color: #ffd700;
+      --background-color: #1a1a1a;
+      --surface-color: #262626;
+      --text-color: #ffffff;
+      --error-color: #ff4d4d;
+      --success-color: #4CAF50;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--background-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .clock-container {
+      background: var(--surface-color);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 20px rgba(255, 152, 0, 0.3);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .time {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: bold;
+      text-align: center;
+      color: var(--secondary-color);
+      text-shadow: 0 0 10px var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    .date {
+      font-size: clamp(1rem, 4vw, 1.4rem);
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 2rem;
+    }
+
+    .control-panel {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+      color: var(--secondary-color);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .input-group {
+      margin-bottom: 1rem;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-color);
+    }
+
+    .custom-select, .time-input {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--surface-color);
+      border: 1px solid var(--primary-color);
+      color: var(--text-color);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: var(--surface-color);
+    }
+
+    .btn-primary:hover {
+      background: var(--secondary-color);
+    }
+
+    .btn-danger {
+      background: var(--error-color);
+      color: white;
+    }
+
+    .quick-alarm {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .quick-btn {
+      padding: 0.5rem;
+      background: var(--surface-color);
+      border: 1px solid var(--primary-color);
+      color: var(--text-color);
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+
+    .quick-btn:hover {
+      background: var(--primary-color);
+      color: var(--surface-color);
+    }
+
+    .active-alarm {
+      background: rgba(255, 152, 0, 0.1);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      text-align: center;
+      display: none;
+    }
+
+    .active-alarm .alarm-details {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .active-alarm .alarm-time {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .active-alarm .countdown {
+      font-size: 1rem;
+      color: var(--secondary-color);
+      background-color: rgba(0,0,0,0.1);
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.3rem;
+    }
+
+    .countdown {
+      font-size: 0.9rem;
+      color: var(--secondary-color);
+      margin-top: 0.5rem;
+    }
+
+    .alarm-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) !important;
+      background-color: var(--background-color);
+      color: var(--primary-color);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      z-index: 1000;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+      border: 2px solid var(--secondary-color);
+      opacity: 0;
+      animation: popupAppear 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+      animation-delay: 0.1s !important;
+      transform-origin: center !important;
+    }
+
+    .alarm-popup-show {
+      display: block !important;
+      opacity: 1 !important;
+      animation: popupAppear 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+    }
+
+    .alarm-popup-clock {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background-color: var(--surface-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+      border: 4px solid var(--secondary-color);
+      animation: clockPulse 2s ease-in-out infinite !important;
+      transform-origin: center !important;
+    }
+
+    .alarm-popup button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .alarm-popup button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: all 0.5s;
+    }
+
+    .alarm-popup button:hover::before {
+      left: 100%;
+    }
+
+    .alarm-popup button:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .alarm-popup h2 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .alarm-popup p {
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+      color: var(--secondary-color);
+      animation: fadeIn 0.5s ease-out 0.2s backwards;
+    }
+
+    .alarm-popup .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .alarm-popup button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .alarm-popup .stop-btn {
+      background-color: var(--error-color);
+      color: white;
+    }
+
+    .alarm-popup .snooze-btn {
+      background-color: var(--success-color);
+      color: white;
+    }
+
+    .alarm-popup button:hover {
+      opacity: 0.9;
+      transform: scale(1.05);
+    }
+
+    .alarm-popup button:active {
+      transform: scale(0.95);
+    }
+
+    .alarm-popup-clock-time {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--text-color);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* Weekly Schedule Styles */
+    .weekly-schedule {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .day-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--surface-color);
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+    }
+
+    .day-selector input[type="checkbox"] {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--secondary-color);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .day-selector input[type="checkbox"]:checked {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .day-selector input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 12px;
+    }
+
+    .day-selector label {
+      color: var(--text-color);
+      font-size: 0.9rem;
+    }
+
+    .multiple-alarms-container {
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .alarm-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--surface-color);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      transition: background-color 0.3s ease;
+    }
+
+    .alarm-item:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+
+    .alarm-item .alarm-details {
+      flex-grow: 1;
+    }
+
+    .alarm-item .alarm-time {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .alarm-item .alarm-days {
+      font-size: 0.9rem;
+      color: var(--secondary-color);
+      margin-bottom: 0.25rem;
+    }
+
+    .alarm-item .alarm-sound {
+      font-size: 0.8rem;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
+
+    .alarm-item .delete-alarm {
+      background-color: var(--error-color);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .alarm-item .delete-alarm:hover {
+      background-color: var(--error-color-dark);
+    }
+
+    /* Music List Styles */
+    .music-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--surface-color);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: background-color 0.3s ease;
+    }
+
+    .music-item.selected {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .music-info {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .music-name {
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+
+    .music-details {
+      font-size: 0.8rem;
+      color: var(--secondary-color);
+    }
+
+    .music-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .music-controls button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: color 0.3s ease;
+    }
+
+    .music-controls .play-pause:hover {
+      color: var(--primary-color);
+    }
+
+    .music-controls .select-music:hover {
+      color: green;
+    }
+
+    .music-controls .delete-music:hover {
+      color: var(--error-color);
+    }
+
+    /* Popup Clock Styles */
+    #popupClock {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #popupClock.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    #popupClockContent {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .popup-time {
+      font-size: 3rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    .popup-date {
+      font-size: 1.2rem;
+      color: var(--secondary-color);
+    }
+
+    #closePopupClock {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: white;
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    #closePopupClock:hover {
+      color: var(--error-color);
+    }
+
+    /* Alarm Music Styles */
+    .music-selection-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .upload-music-btn {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .upload-music-btn:hover {
+      background-color: var(--primary-color-dark);
+    }
+
+    #musicFileInput {
+      display: none;
+    }
+
+    .music-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .music-item {
+      background-color: var(--surface-color);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .music-item:hover {
+      background-color: rgba(0,0,0,0.05);
+    }
+
+    .music-item.selected {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .music-item .music-controls {
+      display: flex;
+      align-items: center;
+    }
+
+    .music-item .play-pause {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .music-item .delete-music {
+      background-color: var(--error-color);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .alarm-item .alarm-countdown {
+      font-size: 0.9rem;
+      color: var(--primary-color);
+      background-color: rgba(0, 0, 0, 0.05);
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.3rem;
+      margin-top: 0.5rem;
+      display: inline-block;
+      font-weight: 500;
+    }
+
+    .alarm-item .alarm-countdown.soon {
+      animation: pulse-countdown 1s infinite;
+      color: var(--error-color);
+    }
+
+    @keyframes pulse-countdown {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes popupAppear {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      70% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes clockPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes buttonHover {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .alarm-popup,
+      .alarm-popup-clock,
+      .alarm-popup button,
+      .alarm-popup h2,
+      .alarm-popup p {
+        animation: none;
+        transition: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .clock-container {
+        padding: 1rem;
+      }
+
+      .control-panel {
+        padding: 1rem;
+      }
+
+      .btn {
+        padding: 0.8rem;
+      }
+      .alarm-popup {
+        width: 95%;
+        padding: 1.5rem;
+      }
+      .alarm-popup button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: var(--surface-color);
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--primary-color);
+    }
+
+    .modal-title {
+      font-size: 1.5em;
+      color: var(--text-color);
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      color: var(--text-color);
+      cursor: pointer;
+    }
+
+    .music-section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.2em;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .music-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .music-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background-color: var(--background-color);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      transition: border-color 0.3s ease;
+    }
+
+    .music-item.selected {
+      border-color: var(--primary-color);
+    }
+
+    .music-info {
+      flex-grow: 1;
+      color: var(--text-color);
+    }
+
+    .music-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .music-controls button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      padding: 5px;
+      color: var(--text-color);
+      transition: color 0.3s ease;
+    }
+
+    .music-controls button:hover {
+      color: var(--primary-color);
+    }
+
+    .music-controls button[data-playing="true"] {
+      color: var(--primary-color);
+    }
+
+    .upload-section {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px dashed var(--primary-color);
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .upload-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .upload-button:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .selected-sound-display {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: var(--surface-color);
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .selected-sound-name {
+      color: var(--text-color);
+      font-size: 1.1em;
+    }
+
+    /* Preview Section Styles */
+    .preview-section {
+      background-color: var(--background-color);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 2px solid var(--primary-color);
+    }
+
+    .preview-section h3 {
+      margin: 0 0 15px 0;
+      color: var(--primary-color);
+    }
+
+    .preview-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-info {
+      flex-grow: 1;
+      color: var(--text-color);
+    }
+
+    .preview-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .no-sound-selected {
+      color: var(--text-color);
+      opacity: 0.7;
+      font-style: italic;
+    }
+
+    /* Modal Footer Styles */
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--primary-color);
+    }
+
+    .modal-footer button {
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+      font-size: 1em;
+      transition: all 0.3s ease;
+    }
+
+    .cancel-button {
+      background-color: var(--surface-color);
+      color: var(--text-color);
+      border: 1px solid var(--primary-color) !important;
+    }
+
+    .confirm-button {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .cancel-button:hover {
+      background-color: var(--background-color);
+    }
+
+    .confirm-button:hover {
+      background-color: var(--secondary-color);
+    }
+
+    /* Sound management styles */
+    .sound-manager {
+      background-color: var(--background-color);
+      border-radius: 10px;
+      border: 2px solid var(--primary-color);
+      padding: 20px;
+    }
+
+    .sound-manager-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--secondary-color);
+    }
+
+    .sound-manager-title {
+      color: var(--primary-color);
+      font-size: 1.2em;
+      margin: 0;
+    }
+
+    .upload-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .upload-button:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .sound-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+
+    .sound-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      background-color: var(--surface-color);
+      border-radius: 8px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .sound-item.selected {
+      border-color: var(--primary-color);
+      background-color: var(--background-color);
+    }
+
+    .sound-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-color);
+    }
+
+    .sound-name {
+      font-size: 1.1em;
+    }
+
+    .sound-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sound-controls button {
+      background: none;
+      border: none;
+      font-size: 1.2em;
+      cursor: pointer;
+      padding: 5px;
+      color: var(--text-color);
+      transition: color 0.3s ease;
+    }
+
+    .sound-controls button:hover {
+      color: var(--primary-color);
+    }
+
+    .no-sounds {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-color);
+      font-style: italic;
+      opacity: 0.8;
+    }
+
+    .modal-footer {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--secondary-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-footer button {
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: all 0.3s ease;
+    }
+
+    .cancel-button {
+      background-color: transparent;
+      color: var(--text-color);
+      border: 1px solid var(--primary-color);
+    }
+
+    .confirm-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+    }
+
+    .cancel-button:hover {
+      background-color: var(--surface-color);
+    }
+
+    .confirm-button:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .sound-category {
+      margin-top: 20px;
+      margin-bottom: 10px;
+      padding: 0 15px;
+    }
+    
+    .sound-category h3 {
+      color: var(--text-color);
+      font-size: 1.1em;
+      margin: 0;
+      opacity: 0.8;
+    }
+    
+    .sound-category + .sound-item {
+      margin-top: 10px;
+    }
+
+    .sound-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      margin: 8px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: var(--background-color);
+    }
+
+    .sound-item:hover {
+      background-color: var(--hover-color);
+      transform: translateX(5px);
+    }
+
+    .sound-item.selected {
+      background-color: var(--primary-color);
+      color: white;
+      transform: translateX(5px);
+    }
+
+    .sound-info {
+      flex-grow: 1;
+      font-size: 1.1em;
+    }
+
+    .sound-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .play-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      padding: 8px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .play-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .sound-category {
+      margin-top: 25px;
+      margin-bottom: 15px;
+      padding: 0 15px;
+    }
+
+    .sound-category h3 {
+      color: var(--text-color);
+      font-size: 1.2em;
+      margin: 0;
+      opacity: 0.9;
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: 5px;
+      display: inline-block;
+    }
+
+    .sound-selection-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 5px;
+      padding: 10px;
+      background-color: var(--surface-color);
+      border-radius: 5px;
+    }
+
+    .sound-selection-info span {
+      flex-grow: 1;
+      color: var(--text-color);
+    }
+
+    .sound-selection-info button {
+      padding: 8px 12px;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sound-selection-info button:hover {
+      background-color: var(--secondary-color);
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="clock-container">
+    <!-- Selected Sound Display -->
+    <div class="selected-sound-display">
+      <span class="selected-sound-name">Selected Sound: <span id="selectedSound">No sound selected</span></span>
+      <div class="music-controls">
+        <button id="previewSelectedSound" title="Preview">▶️</button>
+        <button id="stopSelectedSound" title="Stop">⏹️</button>
+      </div>
+    </div>
+    <div class="time" id="time">00:00:00</div>
+    <div class="date" id="date">Monday, January 1</div>
+    
+    <!-- Sound Selection Button -->
+    <button id="openMusicSelection" class="control-button">🎵 Select Sound</button>
+    
+    <!-- Rest of the clock content -->
+    <div class="control-panel">
+      <div class="panel-title">Set Alarm [Made by sagar parajuli]</div>
+      
+      <div class="input-group">
+        <label>Quick Alarm</label>
+        <div class="quick-alarm">
+          <button class="quick-btn" data-minutes="5">+5m</button>
+          <button class="quick-btn" data-minutes="10">+10m</button>
+          <button class="quick-btn" data-minutes="15">+15m</button>
+          <button class="quick-btn" data-minutes="30">+30m</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Custom Time</label>
+        <input type="time" class="time-input" id="alarmTime">
+      </div>
+
+      <div class="input-group">
+        <label>Display Format</label>
+        <select class="custom-select" id="timeFormat">
+          <option value="24">24-Hour</option>
+          <option value="12">12-Hour</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Alarm Sound</label>
+        <div class="sound-selection-info">
+          <span id="selectedSound">CheckSelected</span>
+          <button id="openMusicSelection" class="control-button">🎵 Select Sound</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="setAlarm">Set Alarm</button>
+    <button class="btn btn-danger" id="clearAlarm">Clear Alarm</button>
+
+    <div id="activeAlarm" class="active-alarm">
+      <div class="alarm-details">
+        <span id="alarmText" class="alarm-time"></span>
+        <span id="countdown" class="countdown"></span>
+      </div>
+      <button id="clearAlarmButton" class="btn btn-danger">Clear Alarm</button>
+    </div>
+
+    <div class="multiple-alarms-container" id="multipleAlarmsContainer">
+      <!-- Dynamically added alarms will appear here -->
+    </div>
+
+    <!-- Sound Selection Modal -->
+    <div id="musicSelectionModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Select Alarm Sound</h2>
+          <button id="closeMusicSelectionModal" class="close-button">&times;</button>
+        </div>
+
+        <div class="sound-manager">
+          <div id="soundList" class="sound-list">
+            <!-- Sound items will be added here -->
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="cancel-button" id="cancelMusicSelection">Cancel</button>
+          <button class="confirm-button" id="confirmMusicSelection">Save Selection</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="alarmPopup" class="alarm-popup">
+      <div class="alarm-popup-clock">
+        <div id="alarmPopupTime" class="alarm-popup-clock-time">00:00</div>
+      </div>
+      <h2>Alarm</h2>
+      <p>Time to wake up!</p>
+      <div class="buttons">
+        <button class="stop-btn" onclick="stopAlarm()">Snooze</button>
+        <button class="snooze-btn" onclick="snoozeAlarm()">Stop</button>
+      </div>
+    </div>
+
+  <script>
+    let currentFormat = '24';
+    let alarmTimeout = null;
+    let countdownInterval = null;
+    let alarmTime = null;
+    let currentAlarmSound = null;
+    let alarmSoundInterval = null;
+
+    function createBeep() {
+      // Stop any existing alarm sound
+      if (currentAlarmSound) {
+        currentAlarmSound.stop();
+        currentAlarmSound = null;
+      }
+
+      // Clear any existing interval
+      if (alarmSoundInterval) {
+        clearInterval(alarmSoundInterval);
+        alarmSoundInterval = null;
+      }
+
+      // Create new audio context
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Create oscillator
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      // Configure oscillator
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+
+      // Connect audio nodes
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Start oscillator
+      oscillator.start();
+
+      // Store current alarm sound
+      currentAlarmSound = {
+        oscillator: oscillator,
+        gainNode: gainNode,
+        audioContext: audioContext,
+        stop: function() {
+          try {
+            this.oscillator.stop();
+            this.oscillator.disconnect();
+            this.gainNode.disconnect();
+            this.audioContext.close();
+          } catch (e) {}
+        }
+      };
+
+      // Create repeating interval to maintain sound
+      alarmSoundInterval = setInterval(() => {
+        if (!window.isAlarmPlaying && currentAlarmSound) {
+          currentAlarmSound.stop();
+          currentAlarmSound = null;
+          clearInterval(alarmSoundInterval);
+          alarmSoundInterval = null;
+        }
+      }, 500);
+
+      return currentAlarmSound;
+    }
+
+    function playAlarm() {
+      // Ensure any previous alarm is stopped
+      if (currentAlarmSound) {
+        currentAlarmSound.stop();
+        currentAlarmSound = null;
+      }
+
+      // Set alarm playing flag
+      window.isAlarmPlaying = true;
+
+      try {
+        // Retrieve last used sound
+        const lastUsedSound = JSON.parse(localStorage.getItem('selectedAlarmSound'));
+        
+        if (lastUsedSound) {
+          const audioElement = new Audio(lastUsedSound.path);
+          audioElement.loop = true;
+          
+          audioElement.play().catch(err => {
+            console.error('Error playing alarm sound:', err);
+            createBeep(); // Fallback to beep if sound fails
+          });
+
+          currentAlarmSound = {
+            audio: audioElement,
+            stop: function() {
+              this.audio.pause();
+              this.audio.currentTime = 0;
+            }
+          };
+        } else {
+          // Fallback to beep if no sound selected
+          createBeep();
+        }
+
+        // Update popup clock time
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: currentFormat === '12'
+        });
+        document.getElementById('alarmPopupTime').textContent = timeString;
+        
+        // Trigger popup with animation
+        const alarmPopup = document.getElementById('alarmPopup');
+        alarmPopup.style.display = 'block';
+        
+        // Force reflow to restart animation
+        void alarmPopup.offsetWidth;
+        
+        alarmPopup.classList.add('alarm-popup-show');
+      } catch (error) {
+        console.error('Error setting up alarm sound:', error);
+        createBeep(); // Fallback to beep if there's any error
+      }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const timeElement = document.getElementById('time');
+      const dateElement = document.getElementById('date');
+
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+
+      if (currentFormat === '12') {
+        const period = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        timeElement.textContent = `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${period}`;
+      } else {
+        timeElement.textContent = `${String(hours).padStart(2, '0')}:${minutes}:${seconds}`;
+      }
+
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      dateElement.textContent = now.toLocaleDateString(undefined, options);
+    }
+
+    function formatTimeWithCountdown(targetTime) {
+      const now = new Date();
+      const diff = targetTime.getTime() - now.getTime();
+      
+      // Calculate hours, minutes, and seconds
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      // Pad with leading zeros
+      const paddedHours = hours.toString().padStart(2, '0');
+      const paddedMinutes = minutes.toString().padStart(2, '0');
+      const paddedSeconds = seconds.toString().padStart(2, '0');
+      
+      return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+    }
+
+    function updateCountdown() {
+      if (alarmTime) {
+        const countdownElement = document.getElementById('countdown');
+        const timeRemaining = formatTimeWithCountdown(alarmTime);
+        countdownElement.textContent = `Alarm in: ${timeRemaining}`;
+      }
+    }
+
+    function setAlarm(hours = null, mins = null, minutes = null) {
+      // Check if a sound is selected
+      if (!musicManager.selectedSound) {
+        const confirmSelect = confirm('No alarm sound selected! Would you like to select a sound first?');
+        if (confirmSelect) {
+          musicManager.openModal();
+          return;
+        }
+      }
+
+      let time;
+      if (minutes) {
+        // Quick alarm (minutes from now)
+        time = new Date();
+        time.setMinutes(time.getMinutes() + parseInt(minutes));
+      } else if (hours !== null && mins !== null) {
+        // Specific time
+        time = new Date();
+        time.setHours(parseInt(hours));
+        time.setMinutes(parseInt(mins));
+        time.setSeconds(0);
+        
+        // If the time is in the past, set it for tomorrow
+        if (time < new Date()) {
+          time.setDate(time.getDate() + 1);
+        }
+      } else {
+        // Get time from input
+        const timeInput = document.getElementById('alarmTime').value;
+        if (!timeInput) {
+          alert('Please select a time for the alarm!');
+          return;
+        }
+        
+        const [inputHours, inputMinutes] = timeInput.split(':');
+        time = new Date();
+        time.setHours(parseInt(inputHours));
+        time.setMinutes(parseInt(inputMinutes));
+        time.setSeconds(0);
+        
+        // If the time is in the past, set it for tomorrow
+        if (time < new Date()) {
+          time.setDate(time.getDate() + 1);
+        }
+      }
+
+      // Add alarm to manager
+      window.alarmManager.addAlarm(time, musicManager.selectedSound);
+    }
+
+    function clearAlarm() {
+      if (alarmTimeout) {
+        clearTimeout(alarmTimeout);
+        alarmTimeout = null;
+      }
+      
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      
+      alarmTime = null;
+      document.getElementById('activeAlarm').style.display = 'none';
+      document.getElementById('alarmText').textContent = '';
+      
+      // Remove saved alarm from localStorage
+      localStorage.removeItem('savedAlarm');
+    }
+
+    function stopAlarm() {
+      const alarmPopup = document.getElementById('alarmPopup');
+      
+      // Remove show class and add hide animation
+      alarmPopup.classList.remove('alarm-popup-show');
+      
+      // Wait for animation to complete before fully hiding
+      setTimeout(() => {
+        alarmPopup.style.display = 'none';
+      }, 300);
+
+      // Stop alarm sound completely
+      window.isAlarmPlaying = false;
+
+      // Stop and clear current alarm sound
+      if (currentAlarmSound) {
+        currentAlarmSound.stop();
+        currentAlarmSound = null;
+      }
+
+      // Clear alarm interval
+      if (alarmSoundInterval) {
+        clearInterval(alarmSoundInterval);
+        alarmSoundInterval = null;
+      }
+      
+      // Clear alarm timeout
+      if (alarmTimeout) {
+        clearTimeout(alarmTimeout);
+        alarmTimeout = null;
+      }
+
+      // Clear alarm completely
+      alarmTime = null;
+      document.getElementById('activeAlarm').style.display = 'none';
+      document.getElementById('alarmText').textContent = '';
+
+      // Stop countdown
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+    }
+
+    function snoozeAlarm() {
+      const alarmPopup = document.getElementById('alarmPopup');
+      
+      // Remove show class and add hide animation
+      alarmPopup.classList.remove('alarm-popup-show');
+      
+      // Wait for animation to complete before fully hiding
+      setTimeout(() => {
+        alarmPopup.style.display = 'none';
+      }, 300);
+
+      // Stop alarm sound
+      window.isAlarmPlaying = false;
+
+      // Stop and clear current alarm sound
+      if (currentAlarmSound) {
+        currentAlarmSound.stop();
+        currentAlarmSound = null;
+      }
+
+      // Clear alarm interval
+      if (alarmSoundInterval) {
+        clearInterval(alarmSoundInterval);
+        alarmSoundInterval = null;
+      }
+      
+      // Snooze for 5 minutes
+      const snoozeTime = new Date(new Date().getTime() + 5 * 60000);
+      setAlarm(snoozeTime.getHours(), snoozeTime.getMinutes());
+    }
+
+    // Event Listeners
+    document.getElementById('timeFormat').addEventListener('change', (e) => {
+      currentFormat = e.target.value;
+    });
+
+    document.getElementById('setAlarm').addEventListener('click', () => {
+      const timeInput = document.getElementById('alarmTime').value;
+      if (!timeInput) {
+        alert('Please select a time for the alarm!');
+        return;
+      }
+      
+      if (!musicManager.selectedSound) {
+        const confirmSelect = confirm('No alarm sound selected! Would you like to select a sound first?');
+        if (confirmSelect) {
+          musicManager.openModal();
+          return;
+        }
+      }
+
+      setAlarm();
+    });
+    document.getElementById('clearAlarmButton').addEventListener('click', clearAlarm);
+
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const minutes = this.dataset.minutes;
+        if (!musicManager.selectedSound) {
+          const confirmSelect = confirm('No alarm sound selected! Would you like to select a sound first?');
+          if (confirmSelect) {
+            musicManager.openModal();
+            return;
+          }
+        }
+        setAlarm(null, null, minutes);
+      });
+    });
+
+    // Update clock every second
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Clear alarm on page load
+    window.addEventListener('load', function() {
+      // Check for saved alarm in localStorage
+      const savedAlarm = localStorage.getItem('savedAlarm');
+      
+      if (savedAlarm) {
+        try {
+          const alarmData = JSON.parse(savedAlarm);
+          const now = new Date();
+          const savedTime = new Date(alarmData.timestamp);
+
+          // Only restore if the saved alarm is in the future
+          if (savedTime > now) {
+            // Restore the alarm
+            alarmTime = savedTime;
+            
+            // Calculate time until alarm
+            const timeUntilAlarm = savedTime.getTime() - now.getTime();
+
+            // Update UI
+            document.getElementById('activeAlarm').style.display = 'block';
+            document.getElementById('alarmText').textContent = 
+              savedTime.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: currentFormat === '12'
+              });
+
+            // Set timeout for alarm
+            alarmTimeout = setTimeout(() => {
+              playAlarm();
+              document.getElementById('activeAlarm').style.display = 'none';
+              clearInterval(countdownInterval);
+              // Remove saved alarm when it triggers
+              localStorage.removeItem('savedAlarm');
+            }, timeUntilAlarm);
+
+            // Start countdown
+            countdownInterval = setInterval(updateCountdown, 1000);
+            
+            // Initial countdown update
+            updateCountdown();
+          } else {
+            // Remove expired alarm
+            localStorage.removeItem('savedAlarm');
+          }
+        } catch (error) {
+          // Remove invalid saved alarm
+          localStorage.removeItem('savedAlarm');
+        }
+      }
+    });
+
+    // Alarm management system
+    class AlarmManager {
+      constructor() {
+        // Initialize alarms from localStorage
+        this.alarms = JSON.parse(localStorage.getItem('weeklyAlarms')) || [];
+        
+        // Default to all days if no previous selection
+        this.defaultDays = [0, 1, 2, 3, 4, 5, 6];
+        
+        // Retrieve last used sound
+        this.lastUsedSound = JSON.parse(localStorage.getItem('selectedAlarmSound'));
+        
+        this.renderAlarms();
+        this.setupAlarmSchedule();
+        this.startCountdownUpdates();
+      }
+
+      addAlarm(time, sound = null) {
+        // Use default days if no days selected
+        const selectedDays = this.defaultDays;
+
+        // Use last used sound if no sound provided
+        const alarmSound = sound || this.lastUsedSound;
+
+        // Check if alarm with same time already exists
+        const existingAlarm = this.alarms.find(alarm => 
+          alarm.time === time && 
+          JSON.stringify(alarm.days) === JSON.stringify(selectedDays)
+        );
+
+        if (existingAlarm) {
+          // If identical alarm exists, just update its sound
+          existingAlarm.sound = alarmSound;
+        } else {
+          // Create new alarm
+          const newAlarm = {
+            id: Date.now(),
+            time: time,
+            days: selectedDays,
+            sound: alarmSound
+          };
+
+          this.alarms.push(newAlarm);
+        }
+
+        // Save alarms and update display
+        this.saveAlarms();
+        this.renderAlarms();
+        this.setupAlarmSchedule();
+      }
+
+      saveAlarms() {
+        localStorage.setItem('weeklyAlarms', JSON.stringify(this.alarms));
+      }
+
+      renderAlarms() {
+        const container = document.getElementById('multipleAlarmsContainer');
+        container.innerHTML = '';
+
+        if (this.alarms.length === 0) {
+          const noAlarmsMessage = document.createElement('div');
+          noAlarmsMessage.textContent = 'No alarms set. Add an alarm below.';
+          noAlarmsMessage.style.textAlign = 'center';
+          noAlarmsMessage.style.color = 'var(--secondary-color)';
+          noAlarmsMessage.style.padding = '1rem';
+          container.appendChild(noAlarmsMessage);
+          return;
+        }
+
+        this.alarms.forEach(alarm => {
+          const alarmElement = document.createElement('div');
+          alarmElement.classList.add('alarm-item');
+          
+          // Format days
+          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayLabels = alarm.days.map(day => dayNames[day]).join(', ');
+
+          // Prepare sound information
+          const soundName = alarm.sound ? alarm.sound.name : 'Default Sound';
+
+          // Calculate time until alarm
+          const timeUntil = this.calculateTimeUntilAlarm(alarm.time, alarm.days);
+
+          // Format countdown
+          const countdownText = timeUntil.days > 0 
+            ? `${timeUntil.days}d ${timeUntil.hours}h ${timeUntil.minutes}m ${timeUntil.seconds}s`
+            : `${timeUntil.hours}h ${timeUntil.minutes}m ${timeUntil.seconds}s`;
+
+          alarmElement.innerHTML = `
+            <div class="alarm-details">
+              <div class="alarm-time">${alarm.time}</div>
+              <div class="alarm-days">Every day</div>
+              <div class="alarm-sound">Sound: ${soundName}</div>
+              <div class="alarm-countdown ${timeUntil.total < 30 * 60 * 1000 ? 'soon' : ''}">
+                Next Alarm: ${countdownText}
+              </div>
+            </div>
+            <button class="delete-alarm" data-id="${alarm.id}">✕</button>
+          `;
+
+          // Add delete event listener
+          alarmElement.querySelector('.delete-alarm').addEventListener('click', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            this.removeAlarm(id);
+          });
+
+          container.appendChild(alarmElement);
+        });
+      }
+
+      removeAlarm(id) {
+        this.alarms = this.alarms.filter(alarm => alarm.id !== id);
+        this.saveAlarms();
+        this.renderAlarms();
+        this.setupAlarmSchedule();
+      }
+
+      calculateTimeUntilAlarm(alarmTime, alarmDays) {
+        const now = new Date();
+        const [hours, minutes] = alarmTime.split(':').map(Number);
+
+        // Find the next occurrence of the alarm
+        let nextAlarmDate = new Date(now);
+        nextAlarmDate.setHours(hours, minutes, 0, 0);
+
+        // If the time has already passed today, find the next occurrence
+        if (nextAlarmDate <= now) {
+          nextAlarmDate.setDate(nextAlarmDate.getDate() + 1);
+        }
+
+        // Adjust to the correct day of the week
+        while (!alarmDays.includes(nextAlarmDate.getDay())) {
+          nextAlarmDate.setDate(nextAlarmDate.getDate() + 1);
+        }
+
+        // Calculate time difference
+        const timeDiff = nextAlarmDate.getTime() - now.getTime();
+        
+        // Calculate hours, minutes, and seconds
+        const totalSeconds = Math.floor(timeDiff / 1000);
+        const days = Math.floor(totalSeconds / (24 * 3600));
+        const hours_remaining = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+        const minutes_remaining = Math.floor((totalSeconds % 3600) / 60);
+        const seconds_remaining = totalSeconds % 60;
+
+        return {
+          days,
+          hours: hours_remaining,
+          minutes: minutes_remaining,
+          seconds: seconds_remaining,
+          total: timeDiff
+        };
+      }
+
+      setupAlarmSchedule() {
+        // Clear any existing schedules
+        if (window.weeklyAlarmIntervals) {
+          window.weeklyAlarmIntervals.forEach(clearInterval);
+        }
+        window.weeklyAlarmIntervals = [];
+
+        this.alarms.forEach(alarm => {
+          alarm.days.forEach(day => {
+            const interval = setInterval(() => {
+              const now = new Date();
+              const [hours, minutes] = alarm.time.split(':').map(Number);
+
+              // Check if current day matches and time is correct
+              if (now.getDay() === day && 
+                  now.getHours() === hours && 
+                  now.getMinutes() === minutes && 
+                  now.getSeconds() === 0) {
+                // If specific sound is set, temporarily change selected sound
+                if (alarm.sound) {
+                  localStorage.setItem('selectedAlarmSound', JSON.stringify(alarm.sound));
+                }
+                
+                playAlarm();
+              }
+            }, 1000);
+
+            // Store interval for later clearing
+            window.weeklyAlarmIntervals = window.weeklyAlarmIntervals || [];
+            window.weeklyAlarmIntervals.push(interval);
+          });
+        });
+      }
+
+      startCountdownUpdates() {
+        // Clear any existing interval
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+        }
+
+        // Update countdown every second
+        this.countdownInterval = setInterval(() => {
+          this.renderAlarms();
+        }, 1000);
+      }
+
+      updateAlarmSound(sound) {
+        this.lastUsedSound = sound;
+        this.alarms.forEach(alarm => {
+          alarm.sound = sound;
+        });
+        this.saveAlarms();
+      }
+    }
+
+    // Event listener for setting alarms
+    document.getElementById('setAlarm').addEventListener('click', () => {
+      const timeInput = document.getElementById('alarmTime').value;
+      if (!timeInput) {
+        alert('Please select a time for the alarm!');
+        return;
+      }
+
+      // Check if a sound is already selected
+      const selectedSound = localStorage.getItem('selectedAlarmSound');
+      
+      // Add alarm with optional sound
+      alarmManager.addAlarm(timeInput, selectedSound ? JSON.parse(selectedSound) : null);
+
+      // Clear time input
+      document.getElementById('alarmTime').value = '';
+    });
+
+    // Initialize Alarm Manager
+    const alarmManager = new AlarmManager();
+
+    // Music Management System with Predefined and Phone Sounds
+    class MusicManager {
+      constructor() {
+        this.selectedSound = null;
+        this.previewAudio = null;
+        this.alarmAudio = null;
+        this.isPlaying = false;
+        this.previewTimer = null;
+        this.currentPlayingId = null;
+        this.modal = document.getElementById('musicSelectionModal');
+        this.soundList = document.getElementById('soundList');
+
+        // Default alarm sounds
+        this.sounds = [
+          // Classic Alarms
+          { id: 'beep', name: 'Classic Beep', path: '/sounds/beep.wav', category: 'Classic' },
+          { id: 'chubina', name: 'Chubina', path: '/sounds/Chubina.wav', category: 'Classic' },
+          { id: 'beautiful', name: 'Beautiful', path: '/sounds/beautiful.wav', category: 'Classic' },
+          
+          // Electronic
+          { id: 'tarararara', name: 'Tarararara', path: '/sounds/Tarararara.wav', category: 'Electronic' },
+          { id: 'oldtime', name: 'Old Time', path: '/sounds/oldtime.wav', category: 'Electronic' },
+          { id: 'relax', name: 'Relax', path: '/sounds/relax.wav', category: 'Electronic' }
+        ];
+
+        // Always initialize with default sound first
+        this.selectedSound = this.sounds[0];
+        
+        // Then try to load saved selection
+        const savedSound = localStorage.getItem('selectedAlarmSound');
+        if (savedSound) {
+          try {
+            const sound = JSON.parse(savedSound);
+            const foundSound = this.sounds.find(s => s.id === sound.id);
+            if (foundSound) {
+              this.selectedSound = foundSound;
+            }
+          } catch (error) {
+            console.error('Error loading saved sound:', error);
+            localStorage.removeItem('selectedAlarmSound');
+          }
+        }
+
+        this.initializeEventListeners();
+        this.updateSoundList();
+        this.updateSelectedSoundDisplay();
+      }
+
+      updateSoundList() {
+        this.soundList.innerHTML = '';
+        
+        // Group sounds by category
+        const categories = [...new Set(this.sounds.map(sound => sound.category))];
+        
+        categories.forEach(category => {
+          const categorySounds = this.sounds.filter(sound => sound.category === category);
+          if (categorySounds.length > 0) {
+            // Create category header
+            const header = document.createElement('div');
+            header.className = 'sound-category';
+            header.innerHTML = `<h3>${category}</h3>`;
+            this.soundList.appendChild(header);
+            
+            // Add sounds in this category
+            categorySounds.forEach(sound => {
+              const item = this.createSoundItem(sound);
+              this.soundList.appendChild(item);
+            });
+          }
+        });
+      }
+
+      updatePlayButtons() {
+        try {
+          // Update preview/stop button
+          const previewBtn = document.getElementById('previewSelectedSound');
+          if (previewBtn) {
+            previewBtn.innerHTML = this.isPlaying ? '⏹️' : '▶️';
+            previewBtn.title = this.isPlaying ? 'Stop' : 'Preview';
+          }
+
+          // Update all sound item play buttons
+          const buttons = document.querySelectorAll('.play-button');
+          buttons.forEach(button => {
+            const soundItem = button.closest('.sound-item');
+            if (soundItem) {
+              const soundId = soundItem.dataset.soundId;
+              if (this.isPlaying && soundId === this.currentPlayingId) {
+                button.innerHTML = '⏸️';
+                button.title = 'Stop';
+              } else {
+                button.innerHTML = '▶️';
+                button.title = 'Preview';
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error in updatePlayButtons:', error);
+        }
+      }
+
+      selectSound(sound) {
+        if (!sound) return;
+        
+        this.selectedSound = sound;
+        this.saveSelection();
+        
+        // Update selection visual
+        const items = document.querySelectorAll('.sound-item');
+        items.forEach(item => {
+          if (item.dataset.soundId === sound.id) {
+            item.classList.add('selected');
+          } else {
+            item.classList.remove('selected');
+          }
+        });
+
+        // Stop any playing preview
+        this.stopPreview();
+        
+        // Update the display and close modal
+        this.updateSelectedSoundDisplay();
+        this.closeModal();
+
+        // Notify AlarmManager that sound has changed
+        if (window.alarmManager) {
+          window.alarmManager.updateAlarmSound(sound);
+        }
+      }
+
+      saveSelection() {
+        if (this.selectedSound) {
+          try {
+            const soundData = {
+              id: this.selectedSound.id,
+              name: this.selectedSound.name,
+              path: this.selectedSound.path
+            };
+            localStorage.setItem('selectedAlarmSound', JSON.stringify(soundData));
+          } catch (error) {
+            console.error('Error saving sound selection:', error);
+          }
+        }
+      }
+
+      openModal() {
+        this.modal.classList.add('show');
+        this.updateSoundList();
+      }
+
+      closeModal() {
+        this.modal.classList.remove('show');
+      }
+
+      createSoundItem(sound) {
+        const item = document.createElement('div');
+        item.className = 'sound-item';
+        item.dataset.soundId = sound.id;
+        if (this.selectedSound?.id === sound.id) {
+          item.classList.add('selected');
+        }
+        
+        const info = document.createElement('div');
+        info.className = 'sound-info';
+        info.textContent = sound.name;
+        
+        const controls = document.createElement('div');
+        controls.className = 'sound-controls';
+        
+        const playButton = document.createElement('button');
+        playButton.innerHTML = '▶️';
+        playButton.title = 'Preview';
+        playButton.className = 'play-button';
+        
+        // Add click event for preview
+        playButton.onclick = (e) => {
+          e.stopPropagation();
+          if (this.isPlaying && this.currentPlayingId === sound.id) {
+            this.stopPreview();
+          } else {
+            this.previewSound(sound);
+          }
+        };
+        
+        controls.appendChild(playButton);
+        item.appendChild(info);
+        item.appendChild(controls);
+        
+        // Make the entire item clickable for selection
+        item.onclick = () => {
+          this.selectSound(sound);
+        };
+        
+        return item;
+      }
+
+      previewSound(sound) {
+        if (!sound) return;
+
+        // First stop any existing preview
+        this.stopPreview();
+
+        try {
+          // Create and configure new audio
+          const audio = new Audio();
+          
+          // Set up error handling before setting src
+          audio.onerror = (e) => {
+            console.error('Error loading sound:', e);
+            alert('Error loading sound. Please try another sound.');
+            this.stopPreview();
+          };
+
+          // Configure audio
+          audio.src = sound.path;
+          audio.volume = 1.0;
+          
+          // Store reference and update state
+          this.previewAudio = audio;
+          this.isPlaying = true;
+          this.currentPlayingId = sound.id;
+          
+          // Update UI
+          this.updatePlayButtons();
+          
+          // Play the sound
+          audio.play()
+            .then(() => {
+              // Set timeout to stop after 3 seconds
+              this.previewTimer = setTimeout(() => {
+                this.stopPreview();
+              }, 3000);
+            })
+            .catch(error => {
+              console.error('Error playing sound:', error);
+              alert('Error playing sound. Please try another sound.');
+              this.stopPreview();
+            });
+        } catch (error) {
+          console.error('Error in previewSound:', error);
+          this.stopPreview();
+        }
+      }
+
+      stopPreview() {
+        try {
+          // Clear the timeout if it exists
+          if (this.previewTimer) {
+            clearTimeout(this.previewTimer);
+            this.previewTimer = null;
+          }
+
+          // Stop and cleanup audio
+          if (this.previewAudio) {
+            this.previewAudio.pause();
+            this.previewAudio.currentTime = 0;
+            this.previewAudio = null;
+          }
+
+          // Reset state
+          this.isPlaying = false;
+          this.currentPlayingId = null;
+          
+          // Update UI
+          this.updatePlayButtons();
+        } catch (error) {
+          console.error('Error in stopPreview:', error);
+        }
+      }
+
+      playAlarm() {
+        if (!this.selectedSound) return Promise.reject(new Error('No sound selected'));
+
+        // Stop any existing alarm
+        this.stopAlarm();
+
+        // Create and play new alarm
+        const audio = new Audio(this.selectedSound.path);
+        audio.loop = true;
+        audio.volume = 1.0;
+        this.alarmAudio = audio;
+
+        return audio.play()
+          .catch(error => {
+            console.error('Error playing alarm:', error);
+            // Fallback to beep sound if selected sound fails
+            const fallbackAudio = new Audio('/sounds/beep.wav');
+            fallbackAudio.loop = true;
+            fallbackAudio.volume = 1.0;
+            this.alarmAudio = fallbackAudio;
+            return fallbackAudio.play();
+          });
+      }
+
+      stopAlarm() {
+        if (this.alarmAudio) {
+          this.alarmAudio.pause();
+          this.alarmAudio.currentTime = 0;
+          this.alarmAudio = null;
+        }
+      }
+
+      initializeEventListeners() {
+        try {
+          // Modal close button
+          const closeBtn = document.getElementById('closeMusicSelectionModal');
+          if (closeBtn) {
+            closeBtn.onclick = () => {
+              this.stopPreview();
+              this.closeModal();
+            };
+          }
+
+          // Cancel button
+          const cancelBtn = document.getElementById('cancelMusicSelection');
+          if (cancelBtn) {
+            cancelBtn.onclick = () => {
+              this.stopPreview();
+              this.closeModal();
+            };
+          }
+
+          // Confirm button
+          const confirmBtn = document.getElementById('confirmMusicSelection');
+          if (confirmBtn) {
+            confirmBtn.onclick = () => {
+              if (!this.selectedSound) {
+                alert('Please select a sound first!');
+                return;
+              }
+              this.saveSelection();
+              this.stopPreview();
+              this.closeModal();
+            };
+          }
+
+          // Open modal button
+          const openBtn = document.getElementById('openMusicSelection');
+          if (openBtn) {
+            openBtn.onclick = () => {
+              this.openModal();
+            };
+          }
+
+          // Preview button for selected sound
+          const previewBtn = document.getElementById('previewSelectedSound');
+          if (previewBtn) {
+            previewBtn.onclick = () => {
+              if (this.isPlaying) {
+                this.stopPreview();
+              } else if (this.selectedSound) {
+                this.previewSound(this.selectedSound);
+              }
+            };
+          }
+
+          // Stop button for selected sound
+          const stopBtn = document.getElementById('stopSelectedSound');
+          if (stopBtn) {
+            stopBtn.onclick = () => {
+              this.stopPreview();
+            };
+          }
+        } catch (error) {
+          console.error('Error in initializeEventListeners:', error);
+        }
+      }
+
+      updateSelectedSoundDisplay() {
+        try {
+          const display = document.getElementById('selectedSound');
+          if (display) {
+            display.textContent = this.selectedSound ? this.selectedSound.name : 'Classic Beep';
+            
+            // Update preview/stop button visibility
+            const previewBtn = document.getElementById('previewSelectedSound');
+            const stopBtn = document.getElementById('stopSelectedSound');
+            
+            if (previewBtn) previewBtn.style.display = this.selectedSound ? 'inline-block' : 'none';
+            if (stopBtn) stopBtn.style.display = this.selectedSound ? 'inline-block' : 'none';
+          }
+        } catch (error) {
+          console.error('Error in updateSelectedSoundDisplay:', error);
+        }
+      }
+    }
+      
+    // Initialize MusicManager
+    const musicManager = new MusicManager();
+
+    // Permission Management
+    const checkAndRequestPermissions = () => {
+      // Check if this is the first time running the app
+      const isFirstTime = !localStorage.getItem('permissionsRequested');
+
+      if (isFirstTime) {
+        // Create permission popup
+        const permissionPopup = document.createElement('div');
+        permissionPopup.innerHTML = `
+          <div class="permission-popup" style="
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--surface-color);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          ">
+            <h2>App Permissions</h2>
+            <p>This app needs permissions to:</p>
+            <ul style="list-style-type: none; padding: 0;">
+              <li>🔔 Send Notifications</li>
+              <li>🎵 Access Music Storage</li>
+            </ul>
+            <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+              <button id="allow-permissions" style="
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+              ">Allow</button>
+              <button id="deny-permissions" style="
+                background-color: #f44336;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+              ">Deny</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(permissionPopup);
+
+        // Permission buttons event listeners
+        document.getElementById('allow-permissions').addEventListener('click', async () => {
+          try {
+            // Request notification permission
+            const notificationPermission = await Notification.requestPermission();
+            
+            // Request storage permission (Web File System API)
+            if ('permissions' in navigator) {
+              await navigator.permissions.query({ name: 'storage-access' });
+            }
+
+            // Mark permissions as requested
+            localStorage.setItem('permissionsRequested', 'true');
+            localStorage.setItem('notificationPermission', notificationPermission);
+
+            // Remove popup
+            document.body.removeChild(permissionPopup);
+          } catch (error) {
+            console.error('Permission request failed:', error);
+            alert('Failed to get permissions. Some app features may be limited.');
+          }
+        });
+
+        document.getElementById('deny-permissions').addEventListener('click', () => {
+          localStorage.setItem('permissionsRequested', 'true');
+          document.body.removeChild(permissionPopup);
+        });
+      }
+    };
+
+    // Call permission check on app load
+    document.addEventListener('DOMContentLoaded', checkAndRequestPermissions);
+
+    // Add event listener for opening the music selection modal
+    document.getElementById('openMusicSelection').addEventListener('click', () => {
+      musicManager.openModal();
+    });
+
+    // Update the stopAlarm function to use musicManager's stopAlarm
+    function stopAlarm() {
+      const alarmSound = document.getElementById('alarmSound');
+      if (alarmSound) {
+        alarmSound.pause();
+        alarmSound.currentTime = 0;
+      }
+      
+      // Stop the music manager's alarm
+      musicManager.stopAlarm();
+      
+      // Hide alarm popup
+      document.getElementById('alarmPopup').classList.remove('show');
+      document.getElementById('alarmPopupBackground').classList.remove('show');
+      
+      isAlarmActive = false;
+    }
+  </script>
+</body>
+</html>
